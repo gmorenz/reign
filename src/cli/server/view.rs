@@ -25,8 +25,9 @@ fn parse_all_views(views: &Path) -> Result<Manifest, Error> {
         &views,
         "",
         &mut manifest,
-        |ident, _| Ok(quote! { pub mod #ident; }),
-        |path, file_base_name, file| {
+        &mut |ident, _| Ok(quote! { pub mod #ident; }),
+        &mut |path, file_name, file| {
+            let file_base_name = file_name.trim_end_matches(".html");
             write_file(
                 &path.join(format!("{}.rs", file_base_name)),
                 file.to_string(),
@@ -40,7 +41,7 @@ fn parse_all_views(views: &Path) -> Result<Manifest, Error> {
                 pub use #file_name::#ident;
             })
         },
-        |path, views| {
+        &mut |path, views| {
             write_file(&path.join("mod.rs"), quote! { #(#views)* }.to_string())?;
 
             Ok(vec![])

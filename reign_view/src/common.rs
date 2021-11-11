@@ -55,14 +55,14 @@ pub fn recurse<O, I, P>(
     path: &Path,
     relative_path: &str,
     manifest: &mut Manifest,
-    folder_hook: O,
-    file_hook: I,
-    path_hook: P,
+    folder_hook: &mut O,
+    file_hook: &mut I,
+    path_hook: &mut P,
 ) -> Result<Vec<TokenStream>, Error>
 where
-    O: Fn(Ident, Vec<TokenStream>) -> Result<TokenStream, Error> + Copy,
-    I: Fn(&Path, &str, TokenStream) -> Result<TokenStream, Error> + Copy,
-    P: Fn(&Path, Vec<TokenStream>) -> Result<Vec<TokenStream>, Error> + Copy,
+    O: FnMut(Ident, Vec<TokenStream>) -> Result<TokenStream, Error>,
+    I: FnMut(&Path, &str, TokenStream) -> Result<TokenStream, Error>,
+    P: FnMut(&Path, Vec<TokenStream>) -> Result<Vec<TokenStream>, Error>,
 {
     let mut views = vec![];
 
@@ -109,7 +109,7 @@ where
                 idents.iter().map(|x| (format!("{}", x.0), x.1)).collect(),
             );
 
-            views.push(file_hook(path, file_base_name, file_view)?);
+            views.push(file_hook(path, &file_name, file_view)?);
         }
     }
 

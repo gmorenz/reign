@@ -82,22 +82,47 @@ pub fn views(input: Views) -> TokenStream {
 
 #[cfg(not(feature = "hot-reload"))]
 pub fn views(input: Views) -> TokenStream {
+    use std::path::Path;
+
     let dir = get_dir(input);
     let mut map = HashMap::new();
 
+    let mut i = 0;
     let views = reign_view::common::recurse(
         &dir,
         "",
         &mut map,
-        |ident, files| {
+        &mut |ident, files| {
             Ok(quote! {
                 pub mod #ident {
                     #(#files)*
                 }
             })
         },
-        |_, _, file| Ok(file),
-        |_, views| Ok(views),
+        &mut |dir: &Path, file_name: &str, file_code: TokenStream| {
+            // Incldue source as a string so that rustc knows it needs
+            // to run this again when the source code changes.
+
+            // Get an (absolute) path to the source
+            let mut file_path = dir.to_path_buf();
+            file_path.push(file_name);
+            let file_path = file_path.into_os_string().into_string().unwrap();
+
+            // Create a name for the constant
+            let source_name = format!("_SOURCE_{}", i);
+            let source_ident = syn::Ident::new(&source_name, Span::call_site());
+            i += 1;
+
+            // Workaround to quoting the include_str macro instead of literally
+            // including the file into the quote.
+            let include_str_ident = syn::Ident::new("include_str", Span::call_site());
+
+            Ok(quote! {
+                const #source_ident: &str = #include_str_ident !(#file_path);
+                #file_code
+            })
+        },
+        &mut |_, views| Ok(views),
     )
     .expect(INTERNAL_ERR);
 
