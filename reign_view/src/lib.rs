@@ -14,5 +14,11 @@ mod slots;
 #[doc(hidden)]
 pub use slots::{slot_render, Slots};
 
+#[doc(hidden)]
+pub use parse::attribute::encode_attribute_data;
+
+#[doc(hidden)]
+pub use parse::text::encode_text;
+
 pub(crate) const INTERNAL_ERR: &str =
     "Internal error on reign_view. Please create an issue on https://github.com/pksunkara/reign";

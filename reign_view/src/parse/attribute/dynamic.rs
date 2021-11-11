@@ -38,9 +38,9 @@ impl Tokenize for DynamicAttribute {
         self.name.tokenize(&mut name, idents, scopes);
         self.value.tokenize(&mut value, idents, scopes);
 
-        // TODO:(view:html-escape) value
         tokens.append_all(quote! {
-            write!(f, " {}{}{}=\"{}\"", #prefix, #name, #suffix, #value)?;
+            let value = ::reign::view::encode_attribute_data(&format!("{}", #value));
+            write!(f, " {}{}{}={}", #prefix, #name, #suffix, value)?;
         });
     }
 }

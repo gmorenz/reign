@@ -25,9 +25,9 @@ impl Tokenize for VariableAttribute {
 
         self.value.tokenize(&mut value, idents, scopes);
 
-        // TODO:(view:html-escape) value
         tokens.append_all(quote! {
-            write!(f, " {}=\"{}\"", #name, #value)?;
+            let value = ::reign::view::encode_attribute_data(&format!("{}", #value));
+            write!(f, " {}={}", #name, value)?;
         });
     }
 }

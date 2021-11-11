@@ -5,7 +5,7 @@ use syn::{
     Ident, Member,
 };
 
-mod attribute;
+pub(crate) mod attribute;
 mod code;
 mod comment;
 mod consts;
@@ -17,7 +17,7 @@ mod node;
 mod parse_stream;
 mod pat;
 mod string_part;
-mod text;
+pub(crate) mod text;
 mod view_fields;
 
 use attribute::Attribute;

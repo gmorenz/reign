@@ -60,3 +60,16 @@ fn dy_attr_regex() -> String {
 fn var_attr_regex() -> String {
     format!("{}({})", VAR_ATTR_SYMBOL, ATTR_NAME)
 }
+
+pub fn encode_attribute_data(input: &str) -> String {
+    let mut out = String::with_capacity(input.len() + 2);
+    out.push('"');
+    for c in input.chars() {
+        match c {
+            '"' => out.push_str("&#x22;"),
+            _ => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
