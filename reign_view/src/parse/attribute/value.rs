@@ -1,3 +1,5 @@
+use crate::parse::string_part::tokenize_string_parts;
+
 use super::super::{consts::*, StringPart};
 use super::{Error, Parse, ParseStream, Tokenize, ViewFields};
 use proc_macro2::{Span, TokenStream};
@@ -82,7 +84,10 @@ impl Tokenize for AttributeValue {
             tokens.append_all(quote! { #value });
         } else {
             let mut ts = TokenStream::new();
-            self.parts.tokenize(&mut ts, idents, scopes);
+            // TODO (gmorenz): This definitely needs to escape things... I thought I had already done that. Now I'm worried.
+            tokenize_string_parts(&self.parts, &mut ts, idents, scopes, |input_tokens| input_tokens);
+
+            // eprintln!("{:?}", ts);
 
             tokens.append_all(quote! {
                 format!(#ts)

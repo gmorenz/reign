@@ -86,36 +86,38 @@ impl StringPart {
     }
 }
 
-impl Tokenize for StringPart {
-    fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
+impl StringPart {
+    pub fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields, map_tokens: fn(TokenStream) -> TokenStream) {
         match self {
             StringPart::Normal(n) => {
                 let lit = LitStr::new(&n, Span::call_site());
                 lit.to_tokens(tokens);
             }
             // TODO:(view:html-escape) expression
-            StringPart::Expr(e) => e.tokenize(tokens, idents, scopes),
+            StringPart::Expr(e) => {
+                let mut expr_tokens = TokenStream::new();
+                e.tokenize(&mut expr_tokens, idents, scopes);
+                TokenStreamExt::append_all(tokens, map_tokens(expr_tokens));
+            }
         }
     }
 }
 
-impl Tokenize for Vec<StringPart> {
-    fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
-        let format_arg_str = "{}".repeat(self.len());
-        let format_arg_lit = LitStr::new(&format_arg_str, Span::call_site());
+pub fn tokenize_string_parts(this: &[StringPart], tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields, map_tokens: fn(TokenStream) -> TokenStream) {
+    let format_arg_str = "{}".repeat(this.len());
+    let format_arg_lit = LitStr::new(&format_arg_str, Span::call_site());
 
-        let content: Vec<TokenStream> = self
-            .iter()
-            .map(|x| {
-                let mut ts = TokenStream::new();
+    let content: Vec<TokenStream> = this
+        .iter()
+        .map(|x| {
+            let mut ts = TokenStream::new();
 
-                x.tokenize(&mut ts, idents, scopes);
-                ts
-            })
-            .collect();
+            x.tokenize(&mut ts, idents, scopes, map_tokens);
+            ts
+        })
+        .collect();
 
-        tokens.append_all(quote! {
-            #format_arg_lit, #(#content),*
-        });
-    }
+    tokens.append_all(quote! {
+        #format_arg_lit, #(#content),*
+    });
 }

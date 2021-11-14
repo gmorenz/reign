@@ -1,3 +1,5 @@
+use crate::parse::string_part::tokenize_string_parts;
+
 use super::{Error, Parse, ParseStream, StringPart, Tokenize, ViewFields};
 use proc_macro2::TokenStream;
 use quote::{quote, TokenStreamExt};
@@ -18,10 +20,13 @@ impl Parse for Text {
 impl Tokenize for Text {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         let mut ts = TokenStream::new();
-        self.content.tokenize(&mut ts, idents, scopes);
+        tokenize_string_parts(&self.content, &mut ts, idents, scopes, |input_stream| quote!{
+            ::reign::view::encode_text(&#input_stream)
+        });
+        // self.content.tokenize(&mut ts, idents, scopes);
 
         tokens.append_all(quote! {
-            f.write_str(&::reign::view::encode_text(&format!(#ts)))?;
+            f.write_str(&format!(#ts))?;
         })
     }
 }
