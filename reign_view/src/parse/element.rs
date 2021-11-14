@@ -297,6 +297,9 @@ impl Tokenize for Element {
         }
 
         let mut elem = if self.name == "template" {
+            // Generate attrs so they can be used for type ascription,
+            // but don't actually emit the code since we just throw it away.
+            let _attrs = self.attrs_tokens(idents, &new_scopes);
             let children = self.children_tokens(idents, &new_scopes);
 
             quote! {
