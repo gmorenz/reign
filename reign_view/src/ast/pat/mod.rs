@@ -1,4 +1,4 @@
-use super::{expr::expr_no_struct, Expr, Tokenize, ViewFields};
+use super::{expr::expr_no_struct, Expr, tokenize::Tokenize, tokenize::ViewFields};
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{

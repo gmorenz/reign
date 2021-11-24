@@ -1,4 +1,4 @@
-use super::{is_member_named, Tokenize, ViewFields};
+use super::{is_member_named, tokenize::Tokenize, tokenize::ViewFields};
 use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{

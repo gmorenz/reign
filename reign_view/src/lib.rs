@@ -7,18 +7,44 @@ pub use maplit;
 
 #[doc(hidden)]
 pub mod common;
-#[doc(hidden)]
-pub mod parse;
+
+mod ast;
+
 mod slots;
 
 #[doc(hidden)]
 pub use slots::{slot_render, Slots};
 
 #[doc(hidden)]
-pub use parse::attribute::encode_attribute_data;
+pub fn encode_attribute_data(input: &str) -> String {
+    let mut out = String::with_capacity(input.len() + 2);
+    out.push('"');
+    for c in input.chars() {
+        match c {
+            '"' => out.push_str("&#x22;"),
+            _ => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
 
 #[doc(hidden)]
-pub use parse::text::encode_text;
+// Based on https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html#rule-1-html-encode-before-inserting-untrusted-data-into-html-element-content
+pub fn encode_text(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    for c in input.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '\'' => out.push_str("&#x27;"),
+            '"' => out.push_str("&quot;"),
+            _ => out.push(c),
+        }
+    }
+    out
+}
 
 pub(crate) const INTERNAL_ERR: &str =
     "Internal error on reign_view. Please create an issue on https://github.com/pksunkara/reign";

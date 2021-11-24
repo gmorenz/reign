@@ -1,5 +1,6 @@
 use crate::{
-    parse::{parse, tokenize},
+    ast::parse::parse,
+    ast::tokenize::tokenize,
     INTERNAL_ERR,
 };
 use inflector::cases::pascalcase::to_pascal_case;
