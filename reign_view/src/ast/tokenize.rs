@@ -9,7 +9,55 @@ pub(crate) use view_fields::ViewFields;
 
 mod view_fields;
 
-pub fn tokenize(node: Node) -> (TokenStream, Vec<(Ident, bool)>, Vec<TokenStream>) {
+pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
+    let template_name = Ident::new(&template.name, Span::call_site());
+
+    let mut tokens = TokenStream::new();
+    let mut idents = ViewFields::new();
+
+    {
+        let scopes = ViewFields::new();
+
+        // Generate attrs so they can be used for type ascription,
+        // but don't actually emit the code since we just throw it away.
+        let _attrs = attrs_tokens(&template.attrs, &mut idents, &scopes);
+
+
+        // Template.tokenize(tokens, idents, scopes)
+        let children = nodes_tokens(&template.children, &mut idents, &scopes);
+
+        // TODO: We aren't considering top level if/for directives, forbid them.
+        tokens.append_all(
+            quote! {
+                #(#children)*
+            }
+        )
+    }
+
+    let (tokens, idents, types) = (tokens, idents.keys(), idents.values());
+
+    let new_idents: Vec<Ident> = idents.iter().map(|x| x.0.clone()).collect();
+
+    (
+        quote! {
+            pub struct #template_name<'a> {
+                pub _slots: ::reign::view::Slots<'a>,
+                #(pub #new_idents: #types),*
+            }
+
+            #[allow(unused_variables)]
+            impl<'a> std::fmt::Display for #template_name<'a> {
+                fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    #tokens
+                    Ok(())
+                }
+            }
+        },
+        idents,
+    )
+}
+
+pub fn tokenize_root_node(node: Node) -> (TokenStream, Vec<(Ident, bool)>, Vec<TokenStream>) {
     let mut tokens = TokenStream::new();
     let mut idents = ViewFields::new();
     let scopes = ViewFields::new();
@@ -49,10 +97,7 @@ impl Tokenize for Element {
         }
 
         let mut elem = if self.name == "template" {
-            // Generate attrs so they can be used for type ascription,
-            // but don't actually emit the code since we just throw it away.
-            let _attrs = self.attrs_tokens(idents, &new_scopes);
-            let children = self.children_tokens(idents, &new_scopes);
+            let children = nodes_tokens(&self.children, idents, &new_scopes);
 
             quote! {
                 #(#children)*
@@ -65,8 +110,8 @@ impl Tokenize for Element {
             }
         } else if tag_pieces.len() == 1 && is_reserved_tag(&self.name) {
             let start_tag = LitStr::new(&format!("<{}", &self.name), Span::call_site());
-            let attrs = self.attrs_tokens(idents, &new_scopes);
-            let children = self.children_tokens(idents, &new_scopes);
+            let attrs = attrs_tokens(&self.attrs, idents, &new_scopes);
+            let children = nodes_tokens(&self.children, idents, &new_scopes);
             let end_tokens = self.end_tokens();
 
             quote! {
@@ -80,7 +125,7 @@ impl Tokenize for Element {
             let path = convert_tag_name(tag_pieces);
             let attrs = self.component_attrs(idents, &new_scopes);
             let (names, templates) = self.templates(idents, &new_scopes);
-            let children = self.children_tokens(idents, &new_scopes);
+            let children = nodes_tokens(&self.children, idents, &new_scopes);
 
             quote! {
                 write!(f, "{}", crate::views::#(#path)::* {
@@ -272,101 +317,101 @@ impl Element {
             quote! {}
         }
     }
+}
 
-    fn attrs_tokens(&self, idents: &mut ViewFields, scopes: &ViewFields) -> Vec<TokenStream> {
-        self.attrs
-            .iter()
-            .map(|x| {
-                let mut ts = TokenStream::new();
-
-                x.tokenize(&mut ts, idents, &scopes);
-                ts
-            })
-            .collect()
-    }
-
-    fn children_tokens(&self, idents: &mut ViewFields, scopes: &ViewFields) -> Vec<TokenStream> {
-        let mut tokens = vec![];
-        let mut iter = self.children.iter();
-        let mut child_option = iter.next();
-
-        while child_option.is_some() {
-            let child = child_option.unwrap();
-
-            if let Node::Element(e) = child {
-                if e.template_name().is_some() {
-                    child_option = iter.next();
-                    continue;
-                }
-
-                if e.control_attr("if").is_some() {
-                    let mut after_if = vec![child];
-                    let mut next = iter.next();
-                    let (mut has_else, mut has_else_if) = (false, false);
-
-                    while next.is_some() {
-                        let sibling = next.unwrap();
-
-                        if let Node::Element(e) = sibling {
-                            if e.template_name().is_some() {
-                                next = iter.next();
-                                continue;
-                            }
-
-                            // If element has `else`, Mark the children to be cleaned
-                            if e.control_attr("else").is_some() {
-                                after_if.push(sibling);
-                                has_else = true;
-                                child_option = iter.next();
-                                break;
-                            }
-
-                            // If element has `else-if`, mark the children to be cleaned even though we have no `else`
-                            if e.control_attr("else-if").is_some() {
-                                has_else_if = true;
-                            } else {
-                                // Otherwise go to the main loop
-                                child_option = next;
-                                break;
-                            }
-                        }
-
-                        after_if.push(sibling);
-                        next = iter.next();
-                    }
-
-                    after_if = clean_if_else_group(after_if, has_else, has_else_if);
-
-                    for i in after_if {
-                        let mut ts = TokenStream::new();
-
-                        i.tokenize(&mut ts, idents, scopes);
-                        tokens.push(ts);
-                    }
-
-                    // If at the end, break out
-                    if next.is_none() {
-                        break;
-                    }
-
-                    continue;
-                }
-
-                if e.control_attr("else").is_some() || e.control_attr("else-if").is_some() {
-                    // TODO:(view:err) Show the error position
-                    panic!("expected `!if` element before `!else` or `!else-if`");
-                }
-            }
-
+fn attrs_tokens(attrs: &[Attribute], idents: &mut ViewFields, scopes: &ViewFields) -> Vec<TokenStream> {
+    attrs
+        .iter()
+        .map(|x| {
             let mut ts = TokenStream::new();
 
-            child.tokenize(&mut ts, idents, scopes);
-            tokens.push(ts);
-            child_option = iter.next();
+            x.tokenize(&mut ts, idents, &scopes);
+            ts
+        })
+        .collect()
+}
+
+fn nodes_tokens(nodes: &[Node], idents: &mut ViewFields, scopes: &ViewFields) -> Vec<TokenStream> {
+    let mut tokens = vec![];
+    let mut iter = nodes.iter();
+    let mut child_option = iter.next();
+
+    while child_option.is_some() {
+        let child = child_option.unwrap();
+
+        if let Node::Element(e) = child {
+            if e.template_name().is_some() {
+                child_option = iter.next();
+                continue;
+            }
+
+            if e.control_attr("if").is_some() {
+                let mut after_if = vec![child];
+                let mut next = iter.next();
+                let (mut has_else, mut has_else_if) = (false, false);
+
+                while next.is_some() {
+                    let sibling = next.unwrap();
+
+                    if let Node::Element(e) = sibling {
+                        if e.template_name().is_some() {
+                            next = iter.next();
+                            continue;
+                        }
+
+                        // If element has `else`, Mark the children to be cleaned
+                        if e.control_attr("else").is_some() {
+                            after_if.push(sibling);
+                            has_else = true;
+                            child_option = iter.next();
+                            break;
+                        }
+
+                        // If element has `else-if`, mark the children to be cleaned even though we have no `else`
+                        if e.control_attr("else-if").is_some() {
+                            has_else_if = true;
+                        } else {
+                            // Otherwise go to the main loop
+                            child_option = next;
+                            break;
+                        }
+                    }
+
+                    after_if.push(sibling);
+                    next = iter.next();
+                }
+
+                after_if = clean_if_else_group(after_if, has_else, has_else_if);
+
+                for i in after_if {
+                    let mut ts = TokenStream::new();
+
+                    i.tokenize(&mut ts, idents, scopes);
+                    tokens.push(ts);
+                }
+
+                // If at the end, break out
+                if next.is_none() {
+                    break;
+                }
+
+                continue;
+            }
+
+            if e.control_attr("else").is_some() || e.control_attr("else-if").is_some() {
+                // TODO:(view:err) Show the error position
+                panic!("expected `!if` element before `!else` or `!else-if`");
+            }
         }
 
-        tokens
+        let mut ts = TokenStream::new();
+
+        child.tokenize(&mut ts, idents, scopes);
+        tokens.push(ts);
+        child_option = iter.next();
     }
+
+    tokens
 }
 
 

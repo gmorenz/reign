@@ -10,21 +10,76 @@ use parse_stream::ParseStream;
 use regex::Regex;
 use syn::parse_str;
 
-pub fn parse(data: String) -> Result<Node, Error> {
+pub fn parse(data: String, template_name: String) -> Result<ItemTemplate, Error> {
     let mut ps = ParseStream::new(data);
-    let node: Node = ps.parse()?;
+    let item = ItemTemplate::parse(&mut ps, template_name)?;
 
     ps.skip_spaces()?;
 
     if ps.content.len() != ps.cursor {
+        // TODO: Remove this restriction
         Err(ps.error("only one top-level node is allowed"))
     } else {
-        Ok(node)
+        Ok(item)
     }
 }
 
 trait Parse: Sized {
     fn parse(input: &mut ParseStream) -> Result<Self, Error>;
+}
+
+impl ItemTemplate {
+    fn parse(input: &mut ParseStream, template_name: String) -> Result<Self, Error> {
+        let name = input.capture(&tag_name_regex(), 1)?;
+        if name != "template" {
+            return Err(input.error("Expected 'template' element, found something else"));
+        }
+
+        Ok(ItemTemplate {
+            name: template_name,
+            attrs: parse_element_attrs(input)?,
+            children: parse_element_children(input, "template")?,
+        })
+    }
+}
+
+fn parse_element_attrs(input: &mut ParseStream) -> Result<Vec<Attribute>, Error> {
+    let mut attrs = vec![];
+    input.skip_spaces()?;
+
+    while !input.peek("/>") && !input.peek(">") {
+        attrs.push(input.parse()?);
+        input.skip_spaces()?;
+    }
+
+    Ok(attrs)
+}
+
+fn parse_element_children(input: &mut ParseStream, tag_name: &str) -> Result<Vec<Node>, Error> {
+    let mut children = vec![];
+
+    if input.peek("/>") {
+        input.step("/>")?;
+    } else {
+        // input.peek(">") is true here
+        input.step(">")?;
+
+        // TODO:(view:html) Tags that can be left open according to HTML spec
+        if !VOID_TAGS.contains(&tag_name) {
+            let closing_tag = format!("</{}", tag_name);
+
+            while !input.peek(&closing_tag) {
+                let child = input.parse()?;
+                children.push(child);
+            }
+
+            input.step(&closing_tag)?;
+            input.skip_spaces()?;
+            input.step(">")?;
+        }
+    }
+
+    Ok(children)
 }
 
 impl Parse for Node {
@@ -61,43 +116,8 @@ impl Parse for Element {
 
         Ok(Element {
             name: name.to_lowercase(),
-            attrs: {
-                let mut attrs = vec![];
-                input.skip_spaces()?;
-
-                while !input.peek("/>") && !input.peek(">") {
-                    attrs.push(input.parse()?);
-                    input.skip_spaces()?;
-                }
-
-                attrs
-            },
-            children: {
-                let mut children = vec![];
-
-                if input.peek("/>") {
-                    input.step("/>")?;
-                } else {
-                    // input.peek(">") is true here
-                    input.step(">")?;
-
-                    // TODO:(view:html) Tags that can be left open according to HTML spec
-                    if !VOID_TAGS.contains(&name.as_str()) {
-                        let closing_tag = format!("</{}", name);
-
-                        while !input.peek(&closing_tag) {
-                            let child = input.parse()?;
-                            children.push(child);
-                        }
-
-                        input.step(&closing_tag)?;
-                        input.skip_spaces()?;
-                        input.step(">")?;
-                    }
-                }
-
-                children
-            },
+            attrs: parse_element_attrs(input)?,
+            children: parse_element_children(input, &name)?,
         })
     }
 }

@@ -13,6 +13,12 @@ use syn::Member;
 
 use self::{expr::Expr, pat::For};
 
+#[derive(Debug)]
+pub struct ItemTemplate {
+    pub name: String,
+    pub attrs: Vec<Attribute>,
+    pub children: Vec<Node>,
+}
 
 #[derive(Debug)]
 pub enum Node {

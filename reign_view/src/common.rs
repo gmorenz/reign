@@ -1,8 +1,4 @@
-use crate::{
-    ast::parse::parse,
-    ast::tokenize::tokenize,
-    INTERNAL_ERR,
-};
+use crate::{INTERNAL_ERR, ast::{ItemTemplate, parse::parse, tokenize::tokenize}, ast::tokenize::tokenize_root_node};
 use inflector::cases::pascalcase::to_pascal_case;
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
@@ -18,39 +14,40 @@ pub static FILE_REGEX: Lazy<Regex> = Lazy::new(|| {
 pub static FOLDER_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^([[:alpha:]]([[:word:]]*[[:alnum:]])?)").expect(INTERNAL_ERR));
 
-pub fn tokenize_view(path: &Path, file_base_name: &str) -> (TokenStream, Vec<(Ident, bool)>) {
-    let cased = to_pascal_case(file_base_name);
-    let ident = Ident::new(&cased, Span::call_site());
 
-    let (tokens, idents, types) = tokenize(
-        parse(
-            read_to_string(path)
-                .expect(INTERNAL_ERR)
-                .replace("\r\n", "\n"),
-        )
-        .expect(INTERNAL_ERR),
-    );
+// pub fn tokenize_view(path: &Path, file_base_name: &str) -> (TokenStream, Vec<(Ident, bool)>) {
+//     let cased = to_pascal_case(file_base_name);
+//     let ident = Ident::new(&cased, Span::call_site());
 
-    let new_idents: Vec<Ident> = idents.iter().map(|x| x.0.clone()).collect();
+//     let (tokens, idents, types) = tokenize_root_node(
+//         parse(
+//             read_to_string(path)
+//                 .expect(INTERNAL_ERR)
+//                 .replace("\r\n", "\n"),
+//         )
+//         .expect(INTERNAL_ERR),
+//     );
 
-    (
-        quote! {
-            pub struct #ident<'a> {
-                pub _slots: ::reign::view::Slots<'a>,
-                #(pub #new_idents: #types),*
-            }
+//     let new_idents: Vec<Ident> = idents.iter().map(|x| x.0.clone()).collect();
 
-            #[allow(unused_variables)]
-            impl<'a> std::fmt::Display for #ident<'a> {
-                fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                    #tokens
-                    Ok(())
-                }
-            }
-        },
-        idents,
-    )
-}
+//     (
+//         quote! {
+//             pub struct #ident<'a> {
+//                 pub _slots: ::reign::view::Slots<'a>,
+//                 #(pub #new_idents: #types),*
+//             }
+
+//             #[allow(unused_variables)]
+//             impl<'a> std::fmt::Display for #ident<'a> {
+//                 fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//                     #tokens
+//                     Ok(())
+//                 }
+//             }
+//         },
+//         idents,
+//     )
+// }
 
 pub fn recurse<O, I, P>(
     path: &Path,
@@ -99,7 +96,14 @@ where
             }
 
             let file_base_name = file_name.trim_end_matches(".html");
-            let (file_view, idents) = tokenize_view(&new_path, file_base_name);
+            let template_name = to_pascal_case(file_base_name);
+            let data = dbg!(read_to_string(dbg!(new_path)))?
+                .replace("\r\n", "\n");
+            // TODO: Error reporting improvements
+            let template_item = parse(data, template_name).expect("Failed to parse template");
+            let (file_view, idents) = tokenize(&template_item);
+
+            // let (file_view, idents) = tokenize_view(&new_path, file_base_name);
 
             let file_key = format!("{}:{}", relative_path, file_base_name)
                 .trim_start_matches(':')
