@@ -1,8 +1,3 @@
-# reign
-Opinionated Fullstack Web Framework in Rust
+# reign view fork
+WIP fork of reign-view
 
-## Installation
-
-```bash
-cargo install reign --features cli --no-default-features
-```
