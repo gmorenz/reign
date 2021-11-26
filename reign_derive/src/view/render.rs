@@ -124,7 +124,7 @@ pub fn views(input: Views) -> TokenStream {
         },
         &mut |_, views| Ok(views),
     )
-    .expect(INTERNAL_ERR);
+    .unwrap();
 
     IDENTMAP.set(map).expect(INTERNAL_ERR);
 
