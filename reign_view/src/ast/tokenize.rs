@@ -41,7 +41,6 @@ pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
     (
         quote! {
             pub struct #template_name<'a> {
-                pub _slots: ::reign::view::Slots<'a>,
                 #(pub #new_idents: #types),*
             }
 
@@ -102,12 +101,6 @@ impl Tokenize for Element {
             quote! {
                 #(#children)*
             }
-        } else if self.name == "slot" {
-            let name = LitStr::new(&self.slot_name(), Span::call_site());
-
-            quote! {
-                self._slots.render(f, #name)?;
-            }
         } else if tag_pieces.len() == 1 && is_reserved_tag(&self.name) {
             let start_tag = LitStr::new(&format!("<{}", &self.name), Span::call_site());
             let attrs = attrs_tokens(&self.attrs, idents, &new_scopes);
@@ -129,19 +122,6 @@ impl Tokenize for Element {
 
             quote! {
                 write!(f, "{}", crate::views::#(#path)::* {
-                    _slots: ::reign::view::Slots {
-                        templates: ::reign::view::maplit::hashmap!{
-                            #(#names => ::reign::view::slot_render(|f: &mut dyn std::fmt::Write| {
-                                #templates
-                                Ok(())
-                            })),*
-                        },
-                        children: ::reign::view::slot_render(|f: &mut dyn std::fmt::Write| {
-                            #(#children)*
-                            Ok(())
-                        }),
-                        phantom: ::std::marker::PhantomData,
-                    },
                     #(#attrs),*
                 })?;
             }
@@ -215,19 +195,6 @@ impl Element {
         }
 
         None
-    }
-
-    fn slot_name(&self) -> String {
-        if let Some(attr) = self.normal_attr("name") {
-            if let Some(name) = attr.value.value() {
-                return name;
-            } else {
-                // TODO:(view:err) Show the error position
-                panic!("slot name should not have expression");
-            }
-        }
-
-        "default".to_string()
     }
 
     fn template_name(&self) -> Option<String> {

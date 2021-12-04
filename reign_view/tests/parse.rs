@@ -75,11 +75,6 @@ fn test_component_if() {
     common::parse_pass("component_if");
 }
 
-#[test]
-fn test_slot() {
-    common::parse_pass("slot");
-}
-
 // #[test]
 // fn test_else_without_if() {
 //     common::parse_fail("else_without_if");

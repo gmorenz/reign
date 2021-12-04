@@ -97,7 +97,7 @@ where
 
             let file_base_name = file_name.trim_end_matches(".html");
             let template_name = to_pascal_case(file_base_name);
-            let data = dbg!(read_to_string(dbg!(new_path)))?
+            let data = read_to_string(new_path)?
                 .replace("\r\n", "\n");
             // TODO: Error reporting improvements
             let template_item = parse(data, template_name).expect("Failed to parse template");

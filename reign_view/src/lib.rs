@@ -10,11 +10,6 @@ pub mod common;
 
 mod ast;
 
-mod slots;
-
-#[doc(hidden)]
-pub use slots::{slot_render, Slots};
-
 #[doc(hidden)]
 pub fn encode_attribute_data(input: &str) -> String {
     let mut out = String::with_capacity(input.len() + 2);
