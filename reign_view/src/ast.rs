@@ -18,6 +18,9 @@ pub struct ItemTemplate {
     pub name: String,
     pub attrs: Vec<Attribute>,
     pub children: Vec<Node>,
+    /// Style node attatched to this template node,
+    /// doesn't include style from included elements.
+    pub style: String,
 }
 
 #[derive(Debug)]

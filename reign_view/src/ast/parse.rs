@@ -29,18 +29,64 @@ trait Parse: Sized {
 }
 
 impl ItemTemplate {
-    fn parse(input: &mut ParseStream, template_name: String) -> Result<Self, Error> {
-        let name = input.capture(&tag_name_regex(), 1)?;
-        if name != "template" {
-            return Err(input.error("Expected 'template' element, found something else"));
+    fn parse(input: &mut ParseStream, name: String) -> Result<Self, Error> {
+        let mut template = None;
+        let mut style = None;
+
+        for _ in 0.. 2 {
+            let tag_name = input.capture(&tag_name_regex(), 1)?;
+
+            if tag_name == "template" {
+                if template.is_some() {
+                    return Err(input.error("Expected a single 'template' element"))
+                }
+
+                template = Some((
+                    parse_element_attrs(input)?,
+                    parse_element_children(input, "template")?,
+                ))
+            }
+            else if tag_name == "style" {
+                if style.is_some() {
+                    return Err(input.error("Expected a single 'style' element"))
+                }
+
+                style = Some(parse_style_element(input)?);
+            }
+            else {
+                return Err(input.error("Expected 'template' or 'style' element, found something else"));
+            };
         }
 
+        let (attrs, children) = template.ok_or(
+            input.error("Missing 'template' element"))?;
+
         Ok(ItemTemplate {
-            name: template_name,
-            attrs: parse_element_attrs(input)?,
-            children: parse_element_children(input, "template")?,
+            name,
+            attrs,
+            children,
+            style: style.unwrap_or_default(),
         })
     }
+}
+
+// Currently just grabs contents, really we should properly understand stylesheets...
+fn parse_style_element(input: &mut ParseStream) -> Result<String, Error> {
+    let attrs = parse_element_attrs(input)?;
+    if attrs.len() != 0 {
+        return Err(input.error("Attributes on 'style' elements unsupported"))
+    }
+
+    if input.peek("/>") {
+        return Err(input.error("Self closing style tags unsupported (sorry)"))
+    }
+
+    input.step(">")?;
+
+    // TODO: Robust tag parsing (things like </ input>)
+    let out = input.until("</input>", true)?;
+    input.step("</input>")?;
+    Ok(out)
 }
 
 fn parse_element_attrs(input: &mut ParseStream) -> Result<Vec<Attribute>, Error> {

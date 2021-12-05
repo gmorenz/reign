@@ -51,12 +51,21 @@ pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
                     Ok(())
                 }
             }
+
+            // #[allow(unused_variables)]
+            // impl<'a> #template_name<'a> {
+            //     fn stylesheet(&self) -> String {
+            //         let mut out = String::new();
+            //         #style_tokens
+            //         out
+            //     }
+            // }
         },
         idents,
     )
 }
 
-pub(crate) trait Tokenize {
+pub(super) trait Tokenize {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields);
 }
 
