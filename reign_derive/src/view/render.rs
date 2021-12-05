@@ -199,7 +199,6 @@ fn capture(input: &Render) -> TokenStream {
 
     quote! {
         crate::views::#path {
-            _slots: ::reign::view::Slots::default(),
             #(#idents),*
         }
     }
