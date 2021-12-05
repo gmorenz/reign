@@ -1,8 +1,7 @@
-use crate::{INTERNAL_ERR, ast::{ItemTemplate, parse::parse, tokenize::tokenize}, ast::tokenize::tokenize_root_node};
+use crate::{INTERNAL_ERR, ast::{parse::parse, tokenize::tokenize}};
 use inflector::cases::pascalcase::to_pascal_case;
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::quote;
 use regex::Regex;
 use std::{collections::HashMap, fs::read_to_string, io::Error, path::Path};
 

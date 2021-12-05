@@ -12,7 +12,7 @@ mod view_fields;
 pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
     let template_name = Ident::new(&template.name, Span::call_site());
 
-    let mut tokens = TokenStream::new();
+    let mut fmt_tokens = TokenStream::new();
     let mut idents = ViewFields::new();
 
     {
@@ -27,14 +27,14 @@ pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
         let children = nodes_tokens(&template.children, &mut idents, &scopes);
 
         // TODO: We aren't considering top level if/for directives, forbid them.
-        tokens.append_all(
+        fmt_tokens.append_all(
             quote! {
                 #(#children)*
             }
         )
     }
 
-    let (tokens, idents, types) = (tokens, idents.keys(), idents.values());
+    let (idents, types) = (idents.keys(), idents.values());
 
     let new_idents: Vec<Ident> = idents.iter().map(|x| x.0.clone()).collect();
 
@@ -47,23 +47,13 @@ pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
             #[allow(unused_variables)]
             impl<'a> std::fmt::Display for #template_name<'a> {
                 fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                    #tokens
+                    #fmt_tokens
                     Ok(())
                 }
             }
         },
         idents,
     )
-}
-
-pub fn tokenize_root_node(node: Node) -> (TokenStream, Vec<(Ident, bool)>, Vec<TokenStream>) {
-    let mut tokens = TokenStream::new();
-    let mut idents = ViewFields::new();
-    let scopes = ViewFields::new();
-
-    node.tokenize(&mut tokens, &mut idents, &scopes);
-
-    (tokens, idents.keys(), idents.values())
 }
 
 pub(crate) trait Tokenize {
@@ -117,8 +107,8 @@ impl Tokenize for Element {
         } else {
             let path = convert_tag_name(tag_pieces);
             let attrs = self.component_attrs(idents, &new_scopes);
-            let (names, templates) = self.templates(idents, &new_scopes);
-            let children = nodes_tokens(&self.children, idents, &new_scopes);
+
+            // TODO: Deal with children when we deal with slots...
 
             quote! {
                 write!(f, "{}", crate::views::#(#path)::* {
@@ -185,18 +175,6 @@ impl Element {
         None
     }
 
-    fn normal_attr(&self, name: &str) -> Option<&NormalAttribute> {
-        for attr in &self.attrs {
-            if let Attribute::Normal(normal) = attr {
-                if normal.name == name {
-                    return Some(normal);
-                }
-            }
-        }
-
-        None
-    }
-
     fn template_name(&self) -> Option<String> {
         if self.name == "template" {
             for attr in &self.attrs {
@@ -209,31 +187,6 @@ impl Element {
         }
 
         None
-    }
-
-    fn templates(
-        &self,
-        idents: &mut ViewFields,
-        scopes: &ViewFields,
-    ) -> (Vec<LitStr>, Vec<TokenStream>) {
-        let mut names = vec![];
-        let mut templates = vec![];
-
-        for child in &self.children {
-            if let Node::Element(e) = child {
-                if let Some(name) = e.template_name() {
-                    let name = name.get(1..).unwrap();
-                    let mut ts = TokenStream::new();
-
-                    child.tokenize(&mut ts, idents, scopes);
-
-                    names.push(LitStr::new(name, Span::call_site()));
-                    templates.push(ts);
-                }
-            }
-        }
-
-        (names, templates)
     }
 
     // TODO: Build a DAG out of the views, and use default() if the attrs are not defined
@@ -606,7 +559,7 @@ impl Tokenize for Code {
 }
 
 impl StringPart {
-    pub fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields, map_tokens: fn(TokenStream) -> TokenStream) {
+    fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields, map_tokens: fn(TokenStream) -> TokenStream) {
         match self {
             StringPart::Normal(n) => {
                 let lit = LitStr::new(&n, Span::call_site());
