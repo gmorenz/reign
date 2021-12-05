@@ -61,7 +61,7 @@ pub(crate) trait Tokenize {
 }
 
 
-impl Tokenize for Node {
+impl Node {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         match self {
             Node::Element(e) => e.tokenize(tokens, idents, scopes),
@@ -72,7 +72,7 @@ impl Tokenize for Node {
     }
 }
 
-impl Tokenize for Element {
+impl Element {
     #[allow(clippy::cognitive_complexity)]
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         let tag_pieces: Vec<&str> = self.name.split(':').collect();
@@ -404,7 +404,7 @@ fn is_reserved_tag(tag: &str) -> bool {
     SVG_TAGS.contains(&tag) || HTML_TAGS.contains(&tag)
 }
 
-impl Tokenize for Text {
+impl Text {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         let mut ts = TokenStream::new();
         tokenize_string_parts(&self.content, &mut ts, idents, scopes, |input_stream| quote!{
@@ -418,7 +418,7 @@ impl Tokenize for Text {
     }
 }
 
-impl Tokenize for Attribute {
+impl Attribute {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         match self {
             Attribute::Normal(n) => n.tokenize(tokens, idents, scopes),
@@ -429,7 +429,7 @@ impl Tokenize for Attribute {
     }
 }
 
-impl Tokenize for NormalAttribute {
+impl NormalAttribute {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         let name = LitStr::new(&self.name, Span::call_site());
         let mut value = TokenStream::new();
@@ -443,7 +443,7 @@ impl Tokenize for NormalAttribute {
     }
 }
 
-impl Tokenize for AttributeValue {
+impl AttributeValue {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         if !self.has_expr() {
             let mut string = self.value().unwrap();
@@ -496,7 +496,7 @@ impl AttributeValue {
     }
 }
 
-impl Tokenize for DynamicAttribute {
+impl DynamicAttribute {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         let prefix = LitStr::new(&self.prefix, Span::call_site());
         let suffix = LitStr::new(&self.suffix, Span::call_site());
@@ -513,7 +513,7 @@ impl Tokenize for DynamicAttribute {
     }
 }
 
-impl Tokenize for VariableAttribute {
+impl VariableAttribute {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         let name = LitStr::new(&self.name, Span::call_site());
         let mut value = TokenStream::new();
@@ -527,7 +527,7 @@ impl Tokenize for VariableAttribute {
     }
 }
 
-impl Tokenize for Doctype {
+impl Doctype {
     fn tokenize(&self, tokens: &mut TokenStream, _: &mut ViewFields, _: &ViewFields) {
         let doctype_str = LitStr::new(&self.content, Span::call_site());
 
@@ -537,7 +537,7 @@ impl Tokenize for Doctype {
     }
 }
 
-impl Tokenize for Comment {
+impl Comment {
     fn tokenize(&self, tokens: &mut TokenStream, _: &mut ViewFields, _: &ViewFields) {
         let content = format!("<!--{}-->", self.content);
         let comment_str = LitStr::new(&content, Span::call_site());
@@ -549,7 +549,7 @@ impl Tokenize for Comment {
 }
 
 
-impl Tokenize for Code {
+impl Code {
     fn tokenize(&self, tokens: &mut TokenStream, idents: &mut ViewFields, scopes: &ViewFields) {
         match self {
             Code::For(f) => f.tokenize(tokens, idents, scopes),
