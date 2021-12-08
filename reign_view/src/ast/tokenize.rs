@@ -34,14 +34,13 @@ pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
         )
     }
 
-    let (idents, types) = (idents.keys(), idents.values());
-
-    let new_idents: Vec<Ident> = idents.iter().map(|x| x.0.clone()).collect();
+    let (template_args, types) = (idents.keys(), idents.values());
+    let template_arg_idents: Vec<Ident> = template_args.iter().map(|x| x.0.clone()).collect();
 
     (
         quote! {
             pub struct #template_name<'a> {
-                #(pub #new_idents: #types),*
+                #(pub #template_arg_idents: #types),*
             }
 
             #[allow(unused_variables)]
@@ -51,17 +50,8 @@ pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
                     Ok(())
                 }
             }
-
-            // #[allow(unused_variables)]
-            // impl<'a> #template_name<'a> {
-            //     fn stylesheet(&self) -> String {
-            //         let mut out = String::new();
-            //         #style_tokens
-            //         out
-            //     }
-            // }
         },
-        idents,
+        template_args,
     )
 }
 
