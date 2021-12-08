@@ -4,10 +4,6 @@ use once_cell::sync::OnceCell;
 use proc_macro2::{Span, TokenStream};
 use proc_macro_error::abort_call_site;
 use quote::quote;
-#[cfg(feature = "hot-reload")]
-use serde_json::from_str;
-#[cfg(feature = "hot-reload")]
-use std::fs::read_to_string;
 use std::{collections::HashMap, env, path::PathBuf};
 use syn::{
     parse::{Parse, ParseStream, Result},
@@ -17,8 +13,6 @@ use syn::{
     Expr, Ident, LitStr,
 };
 
-#[cfg(feature = "hot-reload")]
-static DIR: OnceCell<PathBuf> = OnceCell::new();
 static IDENTMAP: OnceCell<HashMap<String, Vec<(String, bool)>>> = OnceCell::new();
 
 // TODO: derive: Options after the paths (including changing `crate::views`)
@@ -69,18 +63,6 @@ fn get_dir(input: Views) -> PathBuf {
     dir
 }
 
-#[cfg(feature = "hot-reload")]
-pub fn views(input: Views) -> TokenStream {
-    let dir = get_dir(input);
-
-    DIR.set(dir).expect(INTERNAL_ERR);
-
-    quote! {
-        pub mod views;
-    }
-}
-
-#[cfg(not(feature = "hot-reload"))]
 pub fn views(input: Views) -> TokenStream {
     use std::path::Path;
 
@@ -135,26 +117,7 @@ pub fn views(input: Views) -> TokenStream {
     }
 }
 
-fn read_manifest() {
-    #[cfg(feature = "hot-reload")]
-    if let None = IDENTMAP.get() {
-        let dir = DIR.get().expect(INTERNAL_ERR).clone();
-
-        let manifest = read_to_string(dir.join("_manifest.json"));
-
-        if manifest.is_err() {
-            abort_call_site!("expected _manifest.json to exist and readable");
-        }
-
-        IDENTMAP
-            .set(from_str(&manifest.expect(INTERNAL_ERR)).expect(INTERNAL_ERR))
-            .expect(INTERNAL_ERR);
-    }
-}
-
 fn view_path(input: &Render) -> TokenStream {
-    read_manifest();
-
     let parts = input.parts();
     let (last, elements) = parts.split_last().unwrap();
 

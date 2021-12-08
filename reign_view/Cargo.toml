@@ -31,9 +31,5 @@ reign = { path = "../" }
 pretty_assertions = "0.6.1"
 version-sync = "0.9.3"
 
-[features]
-default = []
-hot-reload = []
-
 [package.metadata.docs.rs]
 all-features = true
