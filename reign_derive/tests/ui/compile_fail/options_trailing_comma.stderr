@@ -1,7 +1,0 @@
-error: unexpected end of input, expected identifier
- --> $DIR/options_trailing_comma.rs:4:5
-  |
-4 |     render!(pages::home, status = 100,);
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in the macro `render` (in Nightly builds, run with -Z macro-backtrace for more info)

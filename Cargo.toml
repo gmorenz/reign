@@ -13,28 +13,14 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 autoexamples = false
 
-[[bin]]
-name = "reign"
-path = "src/cli/main.rs"
-required-features = ["cli"] # remove the need for this
-
 [lib]
 name = "reign"
 path = "src/lib.rs"
 
 [dependencies]
 # lib deps
-log = { version = "0.4.14", optional = true }
-reign_boot = { path = "./reign_boot", version = "0.2.0", optional = true }
 reign_derive = { path = "./reign_derive", version = "0.2.0", optional = true }
-reign_model = { path = "./reign_model", version = "0.2.0", optional = true }
-reign_router = { path = "./reign_router", version = "0.2.0", optional = true }
 reign_view = { path = "./reign_view", version = "0.2.0", optional = true }
-
-# cli deps
-reign_task = { path = "./reign_task", version = "0.2.0", optional = true }
-clap = { version = "=3.0.0-beta.4", optional = true }
-Inflector = { version = "0.11.4", optional = true }
 
 [dev-dependencies]
 version-sync = "0.9.3"
@@ -42,54 +28,18 @@ version-sync = "0.9.3"
 [workspace]
 members = [
 	".",
-	"reign_boot",
 	"reign_derive",
-	"reign_model",
-	"reign_plugin",
-	"reign_router",
 	"reign_view",
-	"reign_task",
-
-	"plugins/*",
-	"utils/*",
-	"tasks/*",
-
-	"examples/model-postgres",
-	"examples/router",
-	"examples/view",
 ]
 default-members = [
 	".",
-	"reign_boot",
 	"reign_derive",
-	"reign_model",
-	"reign_plugin",
-	"reign_router",
 	"reign_view",
-	"reign_task",
-
-	"plugins/*",
-	"utils/*",
-	"tasks/*",
 ]
 
 [features]
-default = ["view", "router", "model-postgres", "framework", "json"]
-
-cli = [
-	"reign_task/templating", "clap", "Inflector"
-]
-
+default = ["view"]
 view = ["reign_view", "reign_derive/view"]
-router = ["reign_router", "reign_derive/router", "log"]
-model-postgres = ["reign_model/model-postgres", "reign_derive/model-postgres"]
-framework = ["reign_boot", "reign_derive/framework", "reign_model/plugin"]
-
-cookie = ["reign_router/cookie", "router"]
-session = ["reign_router/session", "router"]
-json = ["reign_router/json", "router"]
-
-hot-reload = ["reign_view/hot-reload", "reign_derive/hot-reload"]
 
 [package.metadata.docs.rs]
 all-features = true

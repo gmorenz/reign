@@ -13,41 +13,6 @@ pub static FILE_REGEX: Lazy<Regex> = Lazy::new(|| {
 pub static FOLDER_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^([[:alpha:]]([[:word:]]*[[:alnum:]])?)").expect(INTERNAL_ERR));
 
-
-// pub fn tokenize_view(path: &Path, file_base_name: &str) -> (TokenStream, Vec<(Ident, bool)>) {
-//     let cased = to_pascal_case(file_base_name);
-//     let ident = Ident::new(&cased, Span::call_site());
-
-//     let (tokens, idents, types) = tokenize_root_node(
-//         parse(
-//             read_to_string(path)
-//                 .expect(INTERNAL_ERR)
-//                 .replace("\r\n", "\n"),
-//         )
-//         .expect(INTERNAL_ERR),
-//     );
-
-//     let new_idents: Vec<Ident> = idents.iter().map(|x| x.0.clone()).collect();
-
-//     (
-//         quote! {
-//             pub struct #ident<'a> {
-//                 pub _slots: ::reign::view::Slots<'a>,
-//                 #(pub #new_idents: #types),*
-//             }
-
-//             #[allow(unused_variables)]
-//             impl<'a> std::fmt::Display for #ident<'a> {
-//                 fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//                     #tokens
-//                     Ok(())
-//                 }
-//             }
-//         },
-//         idents,
-//     )
-// }
-
 pub fn recurse<O, I, P>(
     path: &Path,
     relative_path: &str,

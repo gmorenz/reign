@@ -6,12 +6,6 @@ use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 use syn::parse_macro_input;
 
-#[cfg(feature = "framework")]
-mod framework;
-#[cfg(feature = "model-postgres")]
-mod model;
-#[cfg(feature = "router")]
-mod router;
 #[cfg(feature = "view")]
 mod view;
 
@@ -76,43 +70,4 @@ pub fn render(input: TokenStream) -> TokenStream {
     let input: view::render::Render = parse_macro_input!(input);
 
     view::render::render(input).into()
-}
-
-/// Helper for using path params in a [reign_router] handle.
-///
-/// # Examples
-///
-/// ```
-/// use reign::prelude::*;
-///
-/// #[params]
-/// async fn name(req: &mut Request, id: String) -> Result<impl Response, Error> {
-///     Ok(id)
-/// }
-/// ```
-#[cfg(feature = "router")]
-#[proc_macro_attribute]
-#[proc_macro_error]
-pub fn params(_: TokenStream, input: TokenStream) -> TokenStream {
-    let input: syn::ItemFn = parse_macro_input!(input);
-
-    router::params::params(input).into()
-}
-
-#[cfg(feature = "framework")]
-#[proc_macro_derive(Config)]
-#[proc_macro_error]
-pub fn config(input: TokenStream) -> TokenStream {
-    let input: syn::DeriveInput = parse_macro_input!(input);
-
-    framework::config::config(input).into()
-}
-
-#[cfg(feature = "model-postgres")]
-#[proc_macro_derive(Model, attributes(model))]
-#[proc_macro_error]
-pub fn model(input: TokenStream) -> TokenStream {
-    let input: syn::DeriveInput = parse_macro_input!(input);
-
-    model::model::model(input).into()
 }
