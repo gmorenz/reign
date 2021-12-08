@@ -39,9 +39,9 @@ pub(crate) const INTERNAL_ERR: &str =
 #[cfg(feature = "view")]
 #[proc_macro]
 pub fn views(input: TokenStream) -> TokenStream {
-    let input: view::render::Views = parse_macro_input!(input);
+    let input: view::Views = parse_macro_input!(input);
 
-    view::render::views(input).into()
+    view::views(input).into()
 }
 
 /// Shorthand notation for rendering a view.
@@ -67,7 +67,7 @@ pub fn views(input: TokenStream) -> TokenStream {
 #[proc_macro]
 #[proc_macro_error]
 pub fn render(input: TokenStream) -> TokenStream {
-    let input: view::render::Render = parse_macro_input!(input);
+    let input: view::Render = parse_macro_input!(input);
 
-    view::render::render(input).into()
+    view::render(input).into()
 }

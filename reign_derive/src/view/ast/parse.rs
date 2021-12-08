@@ -34,7 +34,10 @@ impl ItemTemplate {
         let mut style = None;
 
         for _ in 0.. 2 {
-            let tag_name = input.capture(&tag_name_regex(), 1)?;
+            let tag_name = match input.capture(&tag_name_regex(), 1) {
+                Ok(tag) => tag,
+                Err(_) => break, // TODO: Confirm that this is "unable to match"?
+            };
 
             if tag_name == "template" {
                 if template.is_some() {
