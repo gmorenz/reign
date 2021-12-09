@@ -40,7 +40,8 @@ pub fn tokenize(template: &ItemTemplate) -> (TokenStream, Vec<(Ident, bool)>) {
     (
         quote! {
             pub struct #template_name<'a> {
-                #(pub #template_arg_idents: #types),*
+                #(pub #template_arg_idents: #types,)*
+                pub marker: std::marker::PhantomData<& 'a ()>,
             }
 
             #[allow(unused_variables)]
@@ -111,7 +112,8 @@ impl Element {
 
             quote! {
                 write!(f, "{}", crate::views::#(#path)::* {
-                    #(#attrs),*
+                    #(#attrs,)*
+                    marker: std::marker::PhantomData,
                 })?;
             }
         };

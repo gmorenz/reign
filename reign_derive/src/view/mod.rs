@@ -52,6 +52,10 @@ pub (crate) fn views(input: Views) -> TokenStream {
     let mut templates = vec![];
     collect_views(&dir, &mut templates).unwrap();
 
+    for (path, _) in &templates {
+        eprintln!("p: {}", path.display());
+    }
+
     let style = templates.iter().map(|(_, item)| item.style.as_str()).collect::<String>();
     let style_lit = LitStr::new(&style, Span::call_site());
 
@@ -146,11 +150,14 @@ fn collect_views(
             let file_name_os_str = entry.file_name();
             let file_name: &str = &*file_name_os_str.to_string_lossy();
 
+            eprintln!("np: {}", new_path.display());
             if new_path.is_dir() {
                 if !FOLDER_REGEX.is_match(&file_name) {
+                    eprintln!("\tnot folder");
                     continue;
                 }
 
+                eprintln!("\tfolder");
                 collect_views(
                     &new_path,
                     out,
@@ -160,8 +167,11 @@ fn collect_views(
             }
 
             if !FILE_REGEX.is_match(&file_name) {
+                eprintln!("\tnot file");
                 continue;
             }
+
+            eprintln!("\tfile");
 
             let file_base_name = file_name.trim_end_matches(".html");
             let template_name = to_pascal_case(file_base_name);
