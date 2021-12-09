@@ -34,9 +34,12 @@ impl ItemTemplate {
         let mut style = None;
 
         for _ in 0.. 2 {
+            input.skip_spaces()?;
             let tag_name = match input.capture(&tag_name_regex(), 1) {
                 Ok(tag) => tag,
-                Err(_) => break, // TODO: Confirm that this is "unable to match"?
+                Err(_) => {
+                    break
+                }, // TODO: Confirm that this is "unable to match"?
             };
 
             if tag_name == "template" {
@@ -86,9 +89,9 @@ fn parse_style_element(input: &mut ParseStream) -> Result<String, Error> {
 
     input.step(">")?;
 
-    // TODO: Robust tag parsing (things like </ input>)
-    let out = input.until("</input>", true)?;
-    input.step("</input>")?;
+    // TODO: Robust tag parsing (things like </ style>)
+    let out = input.until("</style>", true)?;
+    // input.step("</style>")?;
     Ok(out)
 }
 

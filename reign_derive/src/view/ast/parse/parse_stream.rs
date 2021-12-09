@@ -135,6 +135,11 @@ impl ParseStream {
     pub(super) fn parse_text(&mut self) -> Result<Vec<StringPart>, Error> {
         StringPart::parse(self, &self.content.clone(), false)
     }
+
+    #[allow(dead_code)]
+    pub(super) fn remaining(&self) -> &str {
+        &self.content[self.cursor..]
+    }
 }
 
 #[cfg(test)]
