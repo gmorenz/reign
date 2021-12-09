@@ -52,6 +52,9 @@ pub (crate) fn views(input: Views) -> TokenStream {
     let mut templates = vec![];
     collect_views(&dir, &mut templates).unwrap();
 
+    let style = templates.iter().map(|(_, item)| item.style.as_str()).collect::<String>();
+    let style_lit = LitStr::new(&style, Span::call_site());
+
     let modules = templates.into_iter().map(|(path, template)| {
         let (file_view, _idents) = tokenize(&template);
 
@@ -81,6 +84,7 @@ pub (crate) fn views(input: Views) -> TokenStream {
     quote! {
         pub mod views {
             #output
+            pub const STYLE: &str = #style_lit;
         }
     }
 }
