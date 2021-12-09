@@ -3,7 +3,6 @@
 #![doc = include_str!("../README.md")]
 
 use proc_macro::TokenStream;
-use proc_macro_error::proc_macro_error;
 use syn::parse_macro_input;
 
 #[cfg(feature = "view")]
@@ -42,32 +41,4 @@ pub fn views(input: TokenStream) -> TokenStream {
     let input: view::Views = parse_macro_input!(input);
 
     view::views(input).into()
-}
-
-/// Shorthand notation for rendering a view.
-///
-/// # Examples
-///
-/// Render the given view
-///
-/// ```ignore
-/// use reign::prelude::*;
-///
-/// render!(pages::home)
-/// ```
-///
-/// You can also specify a status code
-///
-/// ```ignore
-/// use reign::prelude::*;
-///
-/// render!(pages::home, status = 201)
-/// ```
-#[cfg(feature = "view")]
-#[proc_macro]
-#[proc_macro_error]
-pub fn render(input: TokenStream) -> TokenStream {
-    let input: view::Render = parse_macro_input!(input);
-
-    view::render(input).into()
 }
